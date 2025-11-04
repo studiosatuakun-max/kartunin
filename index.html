@@ -1,221 +1,463 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kartunin – Image Ai</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kartunin AI Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root { --bg:#0b0f14; --panel:#121922; --muted:#70839e; --text:#e6edf3; --brand:#7c9cff; --ok:#39d98a; --err:#ff6b6b; }
-    * { box-sizing:border-box; }
-    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
-    .wrap { max-width: 900px; margin: 40px auto; padding: 0 16px; }
-    .card { background: var(--panel); border: 1px solid #1d2733; border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
-    h1 { font-size: 22px; margin: 0 0 16px; }
-    .grid { display:grid; grid-template-columns: 1fr; gap:16px; }
-    @media (min-width: 920px){ .grid { grid-template-columns: 1fr 1fr; } }
-    label { display:block; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
-    input[type="file"] { display:block; width:100%; padding: 10px; border: 1px dashed #2a3a4d; border-radius: 12px; background: #0f1520; color: var(--muted); }
-    .row { display:flex; gap:12px; align-items:center; }
-    select, input[type="range"], button { width:100%; padding: 10px 12px; border-radius: 12px; border: 1px solid #2a3a4d; background:#0f1520; color: var(--text); }
-    button { background: linear-gradient(180deg, #2a3a4d, #1c2736); cursor:pointer; border:1px solid #344a61; font-weight: 600; }
-    button:disabled { opacity:.6; cursor:not-allowed; }
-    .hint { font-size: 12px; color: var(--muted); }
-    .status { font-size: 13px; margin-top: 8px; }
-    .status.ok { color: var(--ok); }
-    .status.err { color: var(--err); }
-    .preview { display:grid; grid-template-columns: 1fr; gap:12px; }
-    @media (min-width: 920px){ .preview { grid-template-columns: 1fr 1fr; } }
-    .imgbox { border:1px solid #243246; border-radius: 14px; overflow:hidden; background:#0f1520; }
-    .imgbox > img { display:block; width:100%; height:auto; }
-    .titlebar { display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--muted); padding:8px 12px; border-bottom:1px solid #1e2a3a; }
-    .actions { display:flex; gap:8px; }
-    a.btn { text-decoration:none; display:inline-block; padding:8px 10px; border-radius:10px; border:1px solid #344a61; }
-    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background:#0d1320; border:1px solid #1f2a3a; padding:2px 6px; border-radius:6px; font-size:12px; color: var(--muted); }
+    body { font-family: 'Inter', sans-serif; }
+    .drop-zone--over { border-style: solid; background-color: #f0f9ff; }
+    #sketchResult, #imagePreview, #sourceImage, #resultImage { width:100%; height:100%; object-fit:contain; }
+    #resultImage.clickable { cursor: zoom-in; }
   </style>
 </head>
-<body>
-<div class="wrap">
-  <div class="card">
-    <h1>🖼️ Kartunin – Image Generator</h1>
-    <p class="hint">Default API: <span class="kbd">http://localhost:8787/api</span> (docker-compose).</p>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+  <div class="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6 md:p-8">
 
-    <div style="margin:16px 0; padding:12px; border:1px solid #2a3a4d; border-radius:12px; background:#0f1520;">
-      <label>API Base URL</label>
-      <input id="apiBase" value="http://localhost:8787/api" style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid #2a3a4d; background:#0b121b; color:var(--text)" />
-      <div class="hint" style="margin-top:6px;">Ubah jika API kamu beda.</div>
+    <!-- Header -->
+    <div class="text-center mb-6">
+      <h1 class="text-3xl md:text-4xl font-bold text-gray-800">KARTUNIN AI GENERATOR</h1>
+      <p class="text-gray-500 mt-2">Gambar ulang foto Anda menjadi ilustrasi kartun 2D dengan AI.</p>
     </div>
 
-    <div class="grid">
-      <div>
-        <label>Choose image</label>
-        <input id="file" type="file" accept="image/*" />
+    <!-- Browser Warning -->
+    <div id="browserWarning" class="mb-6 p-3 bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 rounded-r-lg flex items-center">
+      <svg class="w-6 h-6 mr-3 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.21 3.03-1.742 3.03H4.42c-1.532 0-2.492-1.696-1.742-3.03l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-8a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+      <p class="text-sm font-medium">Untuk hasil terbaik, harap gunakan browser Safari atau Google Chrome.</p>
+    </div>
 
-        <div class="row" style="margin-top:12px;">
-          <div style="flex:1">
-            <label>Style</label>
-            <select id="style">
-              <option value="anime_v1">Anime (clean)</option>
-              <option value="comic_v1">Comic</option>
-              <option value="sketch_v1">Sketch</option>
-              <option value="flat_v1">Flat cel-shade</option>
-            </select>
-          </div>
-          <div style="flex:1">
-            <label>Strength: <span id="strengthLabel">0.6</span></label>
-            <input id="strength" type="range" min="0" max="1" step="0.05" value="0.6" />
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:12px;">
-          <button id="go">Cartoonize</button>
-          <button id="clear" style="flex:0 0 120px;">Clear</button>
-        </div>
-        <div id="status" class="status"></div>
+    <!-- Drop Zone -->
+    <div id="dropZone" class="w-full min-h-80 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-center cursor-pointer transition-colors duration-300 relative bg-gray-50 overflow-hidden">
+      <div id="placeholder" class="text-gray-500 p-4">
+        <svg class="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <p class="mt-2 font-semibold">Area Tampilan Gambar</p>
+        <p class="text-sm">Klik atau seret foto ke sini untuk memulai.</p>
       </div>
+      <img id="imagePreview" src="" class="hidden" alt="Pratinjau Gambar"/>
+    </div>
 
-      <div>
-        <div class="preview">
-          <div class="imgbox" id="origBox" style="display:none;">
-            <div class="titlebar">Original</div>
-            <img id="origImg" alt="Original preview" />
+    <!-- Comparison -->
+    <div id="comparisonContainer" class="hidden w-full border-2 border-dashed border-gray-300 rounded-lg relative bg-gray-50 p-4">
+      <div class="flex items-start justify-around w-full space-x-4">
+        <div class="w-1/2 text-center flex flex-col items-center justify-start">
+          <h4 class="text-sm font-semibold mb-2 text-gray-600">Sumber</h4>
+          <div class="w-full flex items-center justify-center">
+            <img id="sourceImage" src="" class="max-w-full max-h-80 object-contain rounded-md border bg-white">
           </div>
-          <div class="imgbox" id="outBox" style="display:none;">
-            <div class="titlebar">
-              <span>Result</span>
-              <div class="actions">
-                <a id="dl" class="btn" href="#" download>Download</a>
-                <a id="open" class="btn" href="#" target="_blank" rel="noopener">Open</a>
-              </div>
-            </div>
-            <img id="outImg" alt="Cartoonized result" />
+        </div>
+        <div class="text-gray-400 shrink-0 pt-10">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </div>
+        <div class="w-1/2 text-center flex flex-col items-center justify-start">
+          <h4 class="text-sm font-semibold mb-2 text-gray-600">Hasil Kartun</h4>
+          <div class="w-full flex items-center justify-center">
+            <img id="resultImage" src="" class="max-w-full max-h-80 object-contain rounded-md border bg-white">
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden & Controls -->
+    <img id="sketchResult" src="" class="hidden" alt="Hasil Kartun Logic"/>
+    <input type="file" id="fileInput" class="hidden" accept="image/*">
+
+    <div id="backgroundOptions" class="mt-6">
+      <fieldset>
+        <legend class="text-center font-medium text-gray-800 mb-3">Pilih Opsi Background</legend>
+        <div class="flex justify-center gap-4">
+          <div>
+            <input type="radio" name="background-option" value="with-bg" id="with-bg" class="peer hidden" checked>
+            <label for="with-bg" class="block cursor-pointer rounded-lg border border-gray-300 bg-white px-5 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 peer-checked:border-blue-600 peer-checked:ring-2 peer-checked:ring-blue-500 transition-all duration-200">Dengan Background</label>
+          </div>
+          <div>
+            <input type="radio" name="background-option" value="without-bg" id="without-bg" class="peer hidden">
+            <label for="without-bg" class="block cursor-pointer rounded-lg border border-gray-300 bg-white px-5 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 peer-checked:border-blue-600 peer-checked:ring-2 peer-checked:ring-blue-500 transition-all duration-200">Tanpa Background</label>
+          </div>
+        </div>
+      </fieldset>
+      <p id="generateAgainMessage" class="text-center text-sm text-gray-500 mt-3 hidden">Jika hasil tidak memuaskan, lakukan generate ulang.</p>
+    </div>
+
+    <div id="generateButtonContainer" class="hidden text-center mt-6">
+      <button id="generateButton" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg transition-colors duration-300 text-lg shadow-md hover:shadow-lg">GENERATE</button>
+    </div>
+
+    <div id="loader" class="hidden text-center my-4">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <p class="text-gray-600 mt-2">AI sedang menganalisis wajah dan menggambar kartun Anda...</p>
+    </div>
+
+    <div id="revisionSection" class="hidden w-full mt-6">
+      <label for="revisionPrompt" class="block text-center font-medium text-gray-800 mb-2">Revisi Hasil Kartun</label>
+      <textarea id="revisionPrompt" rows="2" class="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: 'ganti warna bajunya jadi merah'"></textarea>
+      <button id="reviseButton" class="w-full sm:w-auto mt-3 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-300 shadow-md hover:shadow-lg flex items-center justify-center mx-auto">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+        REVISI
+      </button>
+    </div>
+
+    <div id="actionButtons" class="hidden flex-col sm:flex-row items-center justify-center gap-4 mt-6">
+      <button id="resetButton" class="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-300">Reset</button>
+      <button id="downloadButton" style="display:none;" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-300">Download</button>
+    </div>
+
+    <div id="historySection" class="hidden w-full mt-6">
+      <h3 class="text-center font-medium text-gray-800 mb-3">Histori Hasil</h3>
+      <div id="historyContainer" class="flex justify-center gap-3 flex-wrap p-2 bg-gray-100 rounded-lg"></div>
+    </div>
+
+    <div id="iosNotes" class="hidden mt-6 p-4 bg-gray-50 rounded-lg text-gray-700">
+      <p class="font-semibold mb-2">⚠️ Jika menggunakan HP/Tablet jangan klik tombol Download. Lakukan:</p>
+      <ul class="list-disc list-inside ml-4 mb-3">
+        <li>Tahan gambar hasil beberapa detik</li>
+        <li>Pilih "Download" / "Add to Photos" / "Save to Photos"</li>
+      </ul>
+    </div>
+
+    <div id="mobileBrowserWarning" class="hidden mt-4 p-3 bg-red-600 text-white font-bold rounded-lg text-center">
+      Wajib memakai browser CHROME atau SAFARI jika memakai HP/Tablet
+    </div>
+
+    <div id="statusMessage" class="hidden mt-6 p-3 border-l-4 rounded-r-lg flex items-center">
+      <svg id="statusIcon" class="w-6 h-6 mr-3" fill="currentColor" viewBox="0 0 20 20"></svg>
+      <p id="statusText" class="text-sm"></p>
+    </div>
+
+    <footer class="mt-8 text-center text-sm text-gray-400 border-t border-gray-200 pt-4">
+      <p>KARTUNIN IMAGE GENERATOR V1.0</p>
+    </footer>
+  </div>
+
+  <!-- Modal Preview -->
+  <div id="previewModal" class="hidden fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center p-4">
+    <button id="closeModalButton" class="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2 hover:bg-black/75">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <div class="relative text-center">
+      <img id="fullResImage" src="" class="max-w-[90vw] max-h-[80vh] object-contain rounded-lg shadow-lg">
+      <div class="mt-4 flex flex-col items-center gap-3">
+        <button id="modalDownloadButton" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-colors duration-300 text-lg shadow-md hover:shadow-lg">Download Gambar</button>
+        <div id="iosNotesModal" class="p-3 bg-gray-900 bg-opacity-80 rounded-lg text-gray-200 text-sm max-w-xs">
+          <p class="font-semibold">Atau, tahan gambar lalu pilih:</p>
+          <ul class="list-none text-left ml-0 mt-1">
+            <li><span class="font-medium">iPhone/iPad:</span> "Add to Photos"</li>
+            <li><span class="font-medium">Android:</span> "Download image"</li>
+          </ul>
         </div>
       </div>
     </div>
   </div>
 
-  <p class="hint" style="margin-top:14px;">Tip: jika buka file ini lewat filesystem, jalankan dev server sederhana:
-    <span class="kbd">python -m http.server 8080</span></p>
-</div>
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // ---- DOM refs
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const placeholder = document.getElementById('placeholder');
+    const loader = document.getElementById('loader');
+    const actionButtons = document.getElementById('actionButtons');
+    const resetButton = document.getElementById('resetButton');
+    const downloadButton = document.getElementById('downloadButton');
+    const statusMessage = document.getElementById('statusMessage');
+    const statusIcon = document.getElementById('statusIcon');
+    const statusText = document.getElementById('statusText');
+    const backgroundOptions = document.getElementById('backgroundOptions');
+    const generateButtonContainer = document.getElementById('generateButtonContainer');
+    const generateButton = document.getElementById('generateButton');
+    const iosNotes = document.getElementById('iosNotes');
+    const historySection = document.getElementById('historySection');
+    const historyContainer = document.getElementById('historyContainer');
+    const comparisonContainer = document.getElementById('comparisonContainer');
+    const sourceImage = document.getElementById('sourceImage');
+    const resultImage = document.getElementById('resultImage');
+    const sketchResult = document.getElementById('sketchResult');
+    const revisionSection = document.getElementById('revisionSection');
+    const revisionPrompt = document.getElementById('revisionPrompt');
+    const reviseButton = document.getElementById('reviseButton');
+    const generateAgainMessage = document.getElementById('generateAgainMessage');
+    const previewModal = document.getElementById('previewModal');
+    const closeModalButton = document.getElementById('closeModalButton');
+    const fullResImage = document.getElementById('fullResImage');
+    const modalDownloadButton = document.getElementById('modalDownloadButton');
+    const mobileBrowserWarning = document.getElementById('mobileBrowserWarning');
 
-<script>
-  const el = (id) => document.getElementById(id);
-  const fileInput = el('file');
-  const styleSel = el('style');
-  const strength = el('strength');
-  const strengthLabel = el('strengthLabel');
-  const goBtn = el('go');
-  const clearBtn = el('clear');
-  const statusEl = el('status');
-  const apiBaseEl = el('apiBase');
-  const origBox = el('origBox');
-  const outBox = el('outBox');
-  const origImg = el('origImg');
-  const outImg = el('outImg');
-  const dl = el('dl');
-  const openL = el('open');
+    // ---- State
+    let uploadedBase64Data = null;
+    let uploadedFileObj = null;   // simpan File asli untuk dikirim ke backend
+    let cartoonHistory = [];
 
-  let pollTimer = null;
+    // ---- Helpers
+    const triggerFileInput = () => fileInput.click();
 
-  strength.addEventListener('input', () => {
-    strengthLabel.textContent = strength.value;
-  });
-
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files && fileInput.files[0]) {
-      const url = URL.createObjectURL(fileInput.files[0]);
-      origImg.src = url;
-      origBox.style.display = 'block';
-    } else {
-      origBox.style.display = 'none';
-    }
-  });
-
-  clearBtn.addEventListener('click', () => {
-    fileInput.value = '';
-    origBox.style.display = 'none';
-    outBox.style.display = 'none';
-    statusEl.textContent = '';
-    if (pollTimer) clearInterval(pollTimer);
-  });
-
-  goBtn.addEventListener('click', async () => {
-    if (!fileInput.files || !fileInput.files[0]) {
-      msg('Please choose an image first.', 'err');
-      return;
-    }
-    disable(true);
-    msg('Uploading & creating job…');
-
-    try {
-      const apiBase = apiBaseEl.value.replace(/\/$/, '');
-      const fd = new FormData();
-      fd.append('file', fileInput.files[0]);
-      fd.append('style', styleSel.value);
-      fd.append('strength', strength.value);
-
-      const create = await fetch(apiBase + '/v1/jobs', { method:'POST', body: fd });
-      if (!create.ok) throw new Error('Create job failed: ' + create.status);
-      const job = await create.json();
-      if (!job.job_id) throw new Error('No job_id in response');
-
-      msg('Job queued. Processing…');
-      poll(job.job_id, apiBase);
-    } catch (e) {
-      console.error(e);
-      msg(e.message || 'Error creating job', 'err');
-      disable(false);
-    }
-  });
-
-  function poll(jobId, apiBase){
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(async () => {
-      try {
-        const r = await fetch(apiBase + '/v1/jobs/' + encodeURIComponent(jobId));
-        if (!r.ok) throw new Error('Polling failed: ' + r.status);
-        const data = await r.json();
-        if (data.status === 'done') {
-          clearInterval(pollTimer);
-          msg('Done ✔', 'ok');
-          if (data.output_url) {
-            outImg.src = apiBase.replace(/\/$/, '') + data.output_url;
-            outBox.style.display = 'block';
-            dl.href = outImg.src;
-            const url = new URL(outImg.src, window.location.href);
-            const fname = (url.pathname.split('/').pop() || 'cartoon.png');
-            dl.setAttribute('download', fname);
-            openL.href = outImg.src;
-          }
-          disable(false);
-        } else if (data.status === 'error') {
-          clearInterval(pollTimer);
-          msg(data.error || 'Processing error', 'err');
-          disable(false);
-        } else {
-          const pct = data.progress_percent != null ? ` – ${data.progress_percent}%` : '';
-          msg(`Processing${pct}…`);
-        }
-      } catch (e) {
-        clearInterval(pollTimer);
-        console.error(e);
-        msg(e.message || 'Polling error', 'err');
-        disable(false);
+    const showStatus = (message, type = 'info') => {
+      statusMessage.classList.remove('hidden','bg-yellow-100','border-yellow-400','text-yellow-700','bg-red-100','border-red-400','text-red-700');
+      if (type === 'error') {
+        statusMessage.classList.add('bg-red-100','border-red-400','text-red-700');
+        statusIcon.innerHTML = `<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>`;
+      } else {
+        statusMessage.classList.add('bg-yellow-100','border-yellow-400','text-yellow-700');
+        statusIcon.innerHTML = `<path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.21 3.03-1.742 3.03H4.42c-1.532 0-2.492-1.696-1.742-3.03l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-8a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"/>`;
       }
-    }, 1200);
-  }
+      statusText.textContent = message;
+    };
 
-  function disable(flag){
-    goBtn.disabled = flag;
-    fileInput.disabled = flag;
-    styleSel.disabled = flag;
-    strength.disabled = flag;
-  }
+    const fetchWithRetry = async (url, options, retries = 3, backoff = 1000) => {
+      for (let i=0;i<retries;i++){
+        try {
+          const res = await fetch(url, options);
+          if (!res.ok) {
+            let err = await res.json().catch(()=>null);
+            throw new Error(`API error: ${res.status} ${res.statusText}${err && err.error ? ' - ' + err.error : ''}`);
+          }
+          return res;
+        } catch(e){
+          if (i===retries-1) throw e;
+          await new Promise(r=>setTimeout(r, backoff));
+          backoff *= 2;
+        }
+      }
+    };
 
-  function msg(t, kind){
-    statusEl.textContent = t;
-    statusEl.className = 'status ' + (kind || '');
-  }
-</script>
+    const updateHistoryView = () => {
+      if (cartoonHistory.length < 1) { historySection.classList.add('hidden'); return; }
+      historySection.classList.remove('hidden');
+      historyContainer.innerHTML = '';
+      cartoonHistory.forEach((dataUrl) => {
+        const thumb = document.createElement('img');
+        thumb.src = dataUrl;
+        thumb.className = "w-20 h-20 object-cover rounded-md cursor-pointer border-2 hover:border-blue-500 transition-all";
+        thumb.addEventListener('click', () => {
+          resultImage.src = thumb.src;
+          resultImage.classList.add('clickable');
+          sketchResult.src = thumb.src;
+        });
+        historyContainer.appendChild(thumb);
+      });
+    };
+
+    // ---- File handling
+    const handleFile = (file) => {
+      if (file && file.type.startsWith('image/')) {
+        uploadedFileObj = file;
+        cartoonHistory = [];
+        historyContainer.innerHTML = '';
+        historySection.classList.add('hidden');
+        generateButton.textContent = 'GENERATE';
+        statusMessage.classList.add('hidden');
+        resultImage.classList.remove('clickable');
+        comparisonContainer.classList.add('hidden');
+        revisionSection.classList.add('hidden');
+        revisionPrompt.value = '';
+        generateAgainMessage.classList.add('hidden');
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          uploadedBase64Data = e.target.result;
+          imagePreview.src = uploadedBase64Data;
+          placeholder.classList.add('hidden');
+          imagePreview.classList.remove('hidden');
+          imagePreview.style.cursor = 'pointer';
+          dropZone.classList.remove('hidden');
+          generateButtonContainer.classList.remove('hidden');
+          actionButtons.style.display = 'flex';
+          downloadButton.style.display = 'none';
+          dropZone.style.cursor = 'default';
+          dropZone.removeEventListener('click', triggerFileInput);
+          imagePreview.addEventListener('click', triggerFileInput);
+          iosNotes.classList.add('hidden');
+          mobileBrowserWarning.classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+      } else {
+        showStatus('Silakan pilih file gambar yang valid.', 'error');
+      }
+    };
+
+    // ---- Core: call backend /v1/gemini
+    const API_URL = "https://kartunin.onrender.com/v1/gemini";
+
+    async function generateCartoonWithAI(base64ImageData, revisionPromptText = null){
+      const backgroundOption = document.querySelector('input[name="background-option"]:checked').value;
+
+      // Build prompt (tetap di client, backend hanya forward ke Gemini)
+      let userPrompt = "";
+      if (revisionPromptText) {
+        userPrompt = `Revisi gambar kartun sesuai permintaan: "${revisionPromptText}". Pertahankan gaya dan komposisi.`;
+      } else {
+        userPrompt = backgroundOption === 'with-bg'
+          ? "Ubah foto ini menjadi ilustrasi kartun 2D clean, outline tebal, warna solid; background juga digambar ulang dengan gaya sama; jaga kemiripan wajah."
+          : "Ubah foto ini menjadi ilustrasi kartun 2D clean dengan background putih polos; outline tebal, warna solid; jaga kemiripan wajah.";
+      }
+
+      // Kirim FILE ke backend (bukan JSON)
+      const fd = new FormData();
+      // Jika initial generate → kirim file asli; kalau revisi → kirim gambar hasil terakhir (dataURL → blob)
+      let fileToSend;
+      if (revisionPromptText && resultImage.src.startsWith('data:image')) {
+        const blob = await (await fetch(resultImage.src)).blob();
+        fileToSend = new File([blob], 'revision.png', { type: blob.type || 'image/png' });
+      } else {
+        fileToSend = uploadedFileObj;
+      }
+      fd.append('file', fileToSend);
+
+      // Backend membaca file → encode base64 → panggil Gemini
+      // Prompt dikirim via header kustom agar tidak mengubah backend kamu (opsional),
+      // namun di versi sederhana ini, kita biarkan backend punya prompt default.
+      // Jika ingin kirim prompt dari client, tambahkan endpoint untuk menerima prompt.
+
+      const res = await fetchWithRetry(API_URL, { method: 'POST', body: fd });
+      const data = await res.json();
+
+      // Ambil gambar dari candidates → inline_data
+      const parts = data?.candidates?.[0]?.content?.parts || [];
+      const imgPart = parts.find(p => p.inline_data && p.inline_data.data);
+      if (!imgPart) {
+        const t = parts.find(p => p.text)?.text || 'Tidak ada gambar dari AI.';
+        throw new Error(t);
+      }
+      const mime = imgPart.inline_data.mime_type || 'image/png';
+      const outUrl = `data:${mime};base64,${imgPart.inline_data.data}`;
+
+      // Update UI
+      cartoonHistory.push(outUrl);
+      if (!revisionPromptText) sourceImage.src = uploadedBase64Data;
+      resultImage.src = outUrl;
+      resultImage.classList.add('clickable');
+      sketchResult.src = outUrl;
+
+      dropZone.classList.add('hidden');
+      comparisonContainer.classList.remove('hidden');
+      actionButtons.style.display = 'flex';
+      downloadButton.style.display = 'block';
+      backgroundOptions.classList.remove('hidden');
+      generateButtonContainer.classList.remove('hidden');
+      generateButton.textContent = 'GENERATE ULANG';
+      iosNotes.classList.remove('hidden');
+      mobileBrowserWarning.classList.remove('hidden');
+      revisionSection.classList.remove('hidden');
+      revisionPrompt.value = '';
+      generateAgainMessage.classList.remove('hidden');
+      updateHistoryView();
+    }
+
+    // ---- Reset & Download
+    const triggerUniversalDownload = (imageSrc) => {
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        const w = window.open(imageSrc, '_blank');
+        if (!w) showStatus('Gagal membuka tab. Izinkan pop-up.', 'error');
+      } else {
+        const a = document.createElement('a');
+        a.download = 'cartoon-by-kartunin.png';
+        a.href = imageSrc;
+        a.click();
+      }
+    };
+
+    const resetUI = () => {
+      uploadedBase64Data = null;
+      uploadedFileObj = null;
+      cartoonHistory = [];
+      historyContainer.innerHTML = '';
+      historySection.classList.add('hidden');
+      fileInput.value = '';
+      imagePreview.src = '';
+      placeholder.classList.remove('hidden');
+      imagePreview.classList.add('hidden');
+      imagePreview.style.cursor = 'default';
+      dropZone.classList.remove('hidden');
+      resultImage.classList.remove('clickable');
+      comparisonContainer.classList.add('hidden');
+      actionButtons.style.display = 'none';
+      generateButtonContainer.classList.add('hidden');
+      statusMessage.classList.add('hidden');
+      loader.classList.add('hidden');
+      iosNotes.classList.add('hidden');
+      mobileBrowserWarning.classList.add('hidden');
+      revisionSection.classList.add('hidden');
+      revisionPrompt.value = '';
+      generateAgainMessage.classList.add('hidden');
+      generateButton.textContent = 'GENERATE';
+      dropZone.style.cursor = 'pointer';
+      dropZone.addEventListener('click', triggerFileInput);
+      imagePreview.removeEventListener('click', triggerFileInput);
+    };
+
+    // ---- Events
+    generateButton.addEventListener('click', async () => {
+      if (!uploadedBase64Data || !uploadedFileObj) { showStatus('Pilih gambar dulu.', 'error'); return; }
+      backgroundOptions.classList.add('hidden');
+      generateButtonContainer.classList.add('hidden');
+      actionButtons.style.display = 'none';
+      dropZone.classList.add('hidden');
+      comparisonContainer.classList.add('hidden');
+      iosNotes.classList.add('hidden');
+      mobileBrowserWarning.classList.add('hidden');
+      historySection.classList.add('hidden');
+      revisionSection.classList.add('hidden');
+      generateAgainMessage.classList.add('hidden');
+      loader.classList.remove('hidden');
+      statusMessage.classList.add('hidden');
+
+      try {
+        await generateCartoonWithAI(uploadedBase64Data, null);
+      } catch (e) {
+        showStatus(`Gagal membuat kartun. ${e.message}`, 'error');
+      } finally {
+        loader.classList.add('hidden');
+      }
+    });
+
+    reviseButton.addEventListener('click', async () => {
+      const prompt = revisionPrompt.value.trim();
+      if (!prompt) { showStatus('Masukkan perintah revisi.', 'error'); return; }
+      if (!resultImage.src.startsWith('data:image')) { showStatus('Belum ada hasil untuk direvisi.', 'error'); return; }
+
+      backgroundOptions.classList.add('hidden');
+      generateButtonContainer.classList.add('hidden');
+      actionButtons.style.display = 'none';
+      dropZone.classList.add('hidden');
+      comparisonContainer.classList.add('hidden');
+      iosNotes.classList.add('hidden');
+      mobileBrowserWarning.classList.add('hidden');
+      historySection.classList.add('hidden');
+      revisionSection.classList.add('hidden');
+      generateAgainMessage.classList.add('hidden');
+      loader.classList.remove('hidden');
+      statusMessage.classList.add('hidden');
+
+      try {
+        await generateCartoonWithAI(resultImage.src, prompt);
+      } catch (e) {
+        showStatus(`Gagal revisi. ${e.message}`, 'error');
+      } finally {
+        loader.classList.add('hidden');
+      }
+    });
+
+    dropZone.addEventListener('click', triggerFileInput);
+    fileInput.addEventListener('change', (e) => e.target.files.length && handleFile(e.target.files[0]));
+    dropZone.addEventListener('dragover', (e)=>{ e.preventDefault(); dropZone.classList.add('drop-zone--over'); });
+    ['dragleave','dragend'].forEach(t=>dropZone.addEventListener(t,()=>dropZone.classList.remove('drop-zone--over')));
+    dropZone.addEventListener('drop',(e)=>{ e.preventDefault(); dropZone.classList.remove('drop-zone--over'); e.dataTransfer.files.length && handleFile(e.dataTransfer.files[0]); });
+
+    downloadButton.addEventListener('click', ()=> triggerUniversalDownload(resultImage.src));
+    resetButton.addEventListener('click', resetUI);
+
+    resultImage.addEventListener('click', ()=> {
+      if (resultImage.src && resultImage.src.startsWith('data:image')) {
+        fullResImage.src = resultImage.src;
+        previewModal.classList.remove('hidden');
+      }
+    });
+    closeModalButton.addEventListener('click', ()=> previewModal.classList.add('hidden'));
+    previewModal.addEventListener('click', (e)=> { if (e.target === previewModal) previewModal.classList.add('hidden'); });
+    modalDownloadButton.addEventListener('click', ()=> triggerUniversalDownload(fullResImage.src));
+  });
+  </script>
 </body>
 </html>

@@ -11,3 +11,6 @@ node_modules/
 
 # Env
 .env
+
+# Local Netlify folder
+.netlify
