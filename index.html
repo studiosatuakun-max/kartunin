@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kartunin – Image Ai</title>
+  <style>
+    :root { --bg:#0b0f14; --panel:#121922; --muted:#70839e; --text:#e6edf3; --brand:#7c9cff; --ok:#39d98a; --err:#ff6b6b; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
+    .wrap { max-width: 900px; margin: 40px auto; padding: 0 16px; }
+    .card { background: var(--panel); border: 1px solid #1d2733; border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    h1 { font-size: 22px; margin: 0 0 16px; }
+    .grid { display:grid; grid-template-columns: 1fr; gap:16px; }
+    @media (min-width: 920px){ .grid { grid-template-columns: 1fr 1fr; } }
+    label { display:block; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+    input[type="file"] { display:block; width:100%; padding: 10px; border: 1px dashed #2a3a4d; border-radius: 12px; background: #0f1520; color: var(--muted); }
+    .row { display:flex; gap:12px; align-items:center; }
+    select, input[type="range"], button { width:100%; padding: 10px 12px; border-radius: 12px; border: 1px solid #2a3a4d; background:#0f1520; color: var(--text); }
+    button { background: linear-gradient(180deg, #2a3a4d, #1c2736); cursor:pointer; border:1px solid #344a61; font-weight: 600; }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    .hint { font-size: 12px; color: var(--muted); }
+    .status { font-size: 13px; margin-top: 8px; }
+    .status.ok { color: var(--ok); }
+    .status.err { color: var(--err); }
+    .preview { display:grid; grid-template-columns: 1fr; gap:12px; }
+    @media (min-width: 920px){ .preview { grid-template-columns: 1fr 1fr; } }
+    .imgbox { border:1px solid #243246; border-radius: 14px; overflow:hidden; background:#0f1520; }
+    .imgbox > img { display:block; width:100%; height:auto; }
+    .titlebar { display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--muted); padding:8px 12px; border-bottom:1px solid #1e2a3a; }
+    .actions { display:flex; gap:8px; }
+    a.btn { text-decoration:none; display:inline-block; padding:8px 10px; border-radius:10px; border:1px solid #344a61; }
+    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background:#0d1320; border:1px solid #1f2a3a; padding:2px 6px; border-radius:6px; font-size:12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>🖼️ Kartunin – Image Generator</h1>
+    <p class="hint">Default API: <span class="kbd">http://localhost:8787/api</span> (docker-compose).</p>
+
+    <div style="margin:16px 0; padding:12px; border:1px solid #2a3a4d; border-radius:12px; background:#0f1520;">
+      <label>API Base URL</label>
+      <input id="apiBase" value="http://localhost:8787/api" style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid #2a3a4d; background:#0b121b; color:var(--text)" />
+      <div class="hint" style="margin-top:6px;">Ubah jika API kamu beda.</div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <label>Choose image</label>
+        <input id="file" type="file" accept="image/*" />
+
+        <div class="row" style="margin-top:12px;">
+          <div style="flex:1">
+            <label>Style</label>
+            <select id="style">
+              <option value="anime_v1">Anime (clean)</option>
+              <option value="comic_v1">Comic</option>
+              <option value="sketch_v1">Sketch</option>
+              <option value="flat_v1">Flat cel-shade</option>
+            </select>
+          </div>
+          <div style="flex:1">
+            <label>Strength: <span id="strengthLabel">0.6</span></label>
+            <input id="strength" type="range" min="0" max="1" step="0.05" value="0.6" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <button id="go">Cartoonize</button>
+          <button id="clear" style="flex:0 0 120px;">Clear</button>
+        </div>
+        <div id="status" class="status"></div>
+      </div>
+
+      <div>
+        <div class="preview">
+          <div class="imgbox" id="origBox" style="display:none;">
+            <div class="titlebar">Original</div>
+            <img id="origImg" alt="Original preview" />
+          </div>
+          <div class="imgbox" id="outBox" style="display:none;">
+            <div class="titlebar">
+              <span>Result</span>
+              <div class="actions">
+                <a id="dl" class="btn" href="#" download>Download</a>
+                <a id="open" class="btn" href="#" target="_blank" rel="noopener">Open</a>
+              </div>
+            </div>
+            <img id="outImg" alt="Cartoonized result" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="hint" style="margin-top:14px;">Tip: jika buka file ini lewat filesystem, jalankan dev server sederhana:
+    <span class="kbd">python -m http.server 8080</span></p>
+</div>
+
+<script>
+  const el = (id) => document.getElementById(id);
+  const fileInput = el('file');
+  const styleSel = el('style');
+  const strength = el('strength');
+  const strengthLabel = el('strengthLabel');
+  const goBtn = el('go');
+  const clearBtn = el('clear');
+  const statusEl = el('status');
+  const apiBaseEl = el('apiBase');
+  const origBox = el('origBox');
+  const outBox = el('outBox');
+  const origImg = el('origImg');
+  const outImg = el('outImg');
+  const dl = el('dl');
+  const openL = el('open');
+
+  let pollTimer = null;
+
+  strength.addEventListener('input', () => {
+    strengthLabel.textContent = strength.value;
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files && fileInput.files[0]) {
+      const url = URL.createObjectURL(fileInput.files[0]);
+      origImg.src = url;
+      origBox.style.display = 'block';
+    } else {
+      origBox.style.display = 'none';
+    }
+  });
+
+  clearBtn.addEventListener('click', () => {
+    fileInput.value = '';
+    origBox.style.display = 'none';
+    outBox.style.display = 'none';
+    statusEl.textContent = '';
+    if (pollTimer) clearInterval(pollTimer);
+  });
+
+  goBtn.addEventListener('click', async () => {
+    if (!fileInput.files || !fileInput.files[0]) {
+      msg('Please choose an image first.', 'err');
+      return;
+    }
+    disable(true);
+    msg('Uploading & creating job…');
+
+    try {
+      const apiBase = apiBaseEl.value.replace(/\/$/, '');
+      const fd = new FormData();
+      fd.append('file', fileInput.files[0]);
+      fd.append('style', styleSel.value);
+      fd.append('strength', strength.value);
+
+      const create = await fetch(apiBase + '/v1/jobs', { method:'POST', body: fd });
+      if (!create.ok) throw new Error('Create job failed: ' + create.status);
+      const job = await create.json();
+      if (!job.job_id) throw new Error('No job_id in response');
+
+      msg('Job queued. Processing…');
+      poll(job.job_id, apiBase);
+    } catch (e) {
+      console.error(e);
+      msg(e.message || 'Error creating job', 'err');
+      disable(false);
+    }
+  });
+
+  function poll(jobId, apiBase){
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(async () => {
+      try {
+        const r = await fetch(apiBase + '/v1/jobs/' + encodeURIComponent(jobId));
+        if (!r.ok) throw new Error('Polling failed: ' + r.status);
+        const data = await r.json();
+        if (data.status === 'done') {
+          clearInterval(pollTimer);
+          msg('Done ✔', 'ok');
+          if (data.output_url) {
+            outImg.src = apiBase.replace(/\/$/, '') + data.output_url;
+            outBox.style.display = 'block';
+            dl.href = outImg.src;
+            const url = new URL(outImg.src, window.location.href);
+            const fname = (url.pathname.split('/').pop() || 'cartoon.png');
+            dl.setAttribute('download', fname);
+            openL.href = outImg.src;
+          }
+          disable(false);
+        } else if (data.status === 'error') {
+          clearInterval(pollTimer);
+          msg(data.error || 'Processing error', 'err');
+          disable(false);
+        } else {
+          const pct = data.progress_percent != null ? ` – ${data.progress_percent}%` : '';
+          msg(`Processing${pct}…`);
+        }
+      } catch (e) {
+        clearInterval(pollTimer);
+        console.error(e);
+        msg(e.message || 'Polling error', 'err');
+        disable(false);
+      }
+    }, 1200);
+  }
+
+  function disable(flag){
+    goBtn.disabled = flag;
+    fileInput.disabled = flag;
+    styleSel.disabled = flag;
+    strength.disabled = flag;
+  }
+
+  function msg(t, kind){
+    statusEl.textContent = t;
+    statusEl.className = 'status ' + (kind || '');
+  }
+</script>
+</body>
+</html>
